@@ -28,6 +28,7 @@ struct SchemaReader : public schemaBaseVisitor, public DataReader {
 
     // TODO: secondary memory
     std::unordered_map<std::string, std::unordered_map<std::string, Entity>> loading_with_scheme;
+    std::vector<std::pair<std::string,std::string>> loading_with_scheme2;
 
     std::any visitName_declar(schemaParser::Name_declarContext *ctx) override;
 

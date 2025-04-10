@@ -1,0 +1,10 @@
+title
+StringAtt
+since
+StringAtt
+id
+DoubleAtt
+surname
+StringAtt
+name
+StringAtt

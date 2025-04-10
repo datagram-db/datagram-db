@@ -38,8 +38,9 @@ std::any SchemaReader::visitLanguage(schemaParser::LanguageContext *context) {
         }
 
         globalObjectId = 0;
-        for (auto &[namesp, map2]: loading_with_scheme) {
-            for (auto &[entity_name, entity]: map2) {
+        for (auto &[namespac_, entity_name]: loading_with_scheme2) {
+            {
+                auto& entity = loading_with_scheme[namespac_][entity_name];
                 switch (entity.type) {
                     case CSV:
                         if (!load_csv(entity, true))
@@ -64,8 +65,9 @@ std::any SchemaReader::visitLanguage(schemaParser::LanguageContext *context) {
         }
 
         globalObjectId = 0;
-        for (auto &[namesp, map2]: loading_with_scheme) {
-            for (auto &[entity_name, entity]: map2) {
+        for (auto &[namespac_, entity_name]: loading_with_scheme2) {
+            {
+                auto& entity = loading_with_scheme[namespac_][entity_name];
                 switch (entity.type) {
                     case CSV:
                         if (!load_csv(entity, false))
@@ -121,8 +123,10 @@ std::any SchemaReader::visitEntity_declaration(schemaParser::Entity_declarationC
             loading_filename = UNESCAPE(file->EscapedString()->getText());
             auto e = std::any_cast<Entity>(visitLocal_entity_declaration(context->local_entity_declaration()));
             auto& nss = loading_with_scheme[namespace_];
-            if (!nss.contains(e.name))
+            if (!nss.contains(e.name)) {
                 nss[e.name] = std::move(e);
+            }
+            loading_with_scheme2.emplace_back(namespace_,e.name);
         }
     }
     return {};
@@ -159,9 +163,9 @@ std::any SchemaReader::visitEntity_declaration(schemaParser::Entity_declarationC
             e.type = type;
             e.has_csv_header = has_csv_header;
             e.sep = sep;
-//            auto& nss = loading_with_scheme[namespace_];
-//            if (!nss.contains(e.name))
-//                nss[e.name] = e;
+            auto& nss = loading_with_scheme[namespace_];
+            if (!nss.contains(e.name))
+                nss[e.name] = e;
             return e;
         }
         return {};
@@ -430,8 +434,6 @@ bool SchemaReader::load_xml(const Entity& e, bool isFirstPass) {
     first_pass = true;
     state_stack.emplace_back(&e);
     _isFirstPass = isFirstPass;
-    //    dl.load("/home/giacomo/Scaricati/Unibench-0.2/Dataset/Schema.txt");
-//    std::cout << "Hello world!" << std::endl;
 
     // Initialize all fields to zero
     xmlSAXHandler sh = { 0 };

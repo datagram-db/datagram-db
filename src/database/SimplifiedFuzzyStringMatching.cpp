@@ -240,7 +240,7 @@ void SimplifiedFuzzyStringMatching::fuzzyMatch(double threshold, size_t topk, co
 
 void
 FuzzyMatchSerializer::addGramsToMap(const std::string &string,  const std::pair<size_t,size_t>& id, const std::vector<std::string> &associatedOtherStrings) {
-    if (string.empty()) return;
+    if (string.empty() || (!consentToFullyFuzzyIndex)) return;
     termObject[string].emplace(id);
     objectMultipleStirngs[id].emplace_back(string);
     for (const std::string& x : associatedOtherStrings)
@@ -270,6 +270,8 @@ void FuzzyMatchSerializer::fuzzyMatch(double threshold, size_t topk, const std::
     std::vector<std::string> objectGrams = compareString_wordLetterPairs(objectString);
     std::set<std::pair<size_t,size_t>> candidates{};
     std::unordered_map<std::string, size_t> m1;
+    if (!consentToFullyFuzzyIndex)
+        throw std::runtime_error("ERROR: cannot fuzzy match if you disabled the indexing (2)!");
 
     // obtain all the objects that are assoicated to the gram that are within the current objectString in objectStrings
     for (const std::string& gram : objectGrams) {

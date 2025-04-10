@@ -66,9 +66,6 @@ void start_element_callback(void *ctx, const xmlChar *name, const xmlChar **attr
                     DEBUG_ASSERT(dis.has_value());
                     if ((dis.has_value()) && (dis.value()->xml_property)) {
                         std::string val{(char*)attrs[1]};
-                        if (key == "ref"){
-                            std::cerr << "HERE" << std::endl;
-                        }
                         load_attribute_value(loader, local_toppe, val, key);
                     }
                     attrs = &attrs[2];

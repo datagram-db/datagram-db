@@ -27,6 +27,7 @@
 #include "database/ActivityTable.h"
 #include <cmath>
 
+#include <filesystem>
 #include <cassert>
 #include <algorithm>
 #include "yaucl/functional/assert.h"
@@ -131,6 +132,8 @@ ActivityTable::record::record(size_t act, size_t id, size_t time, ActivityTable:
         void ActivityTable::sanityCheck() {
             //assert(std::is_sorted(table.begin(), table.end()));
         }
+
+
 
         const std::vector<std::vector<size_t>> & ActivityTable::indexing1() { // todo: rename as indexing, and remove expectedOrdering from emplace_back, instead, put in
             size_t offset = 0;

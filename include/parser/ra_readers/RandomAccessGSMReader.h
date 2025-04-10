@@ -18,6 +18,9 @@ struct RandomAccessGSMReader  {
     DataWriter* getWriter() {
         return &db;
     }
+    void serialize_and_index_into_secondary(const std::filesystem::path& path) {
+        db.forloading.secondary_memory_index(path);
+    }
 private:
     PrimaryMemoryLoader db;
 };

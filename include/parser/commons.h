@@ -57,6 +57,11 @@ struct DataFormatHandler {
     void load_to_primary_memory(const std::string& inPath,
                                                                DataFormat input);
 
+    void load_to_secondary_memory(const std::string& inPath,
+                             const std::string& outFolder,
+                             DataFormat input) ;
+
+
     /**
      * Reads the input data using a callback function
      * @param inPath    Input path

@@ -23,27 +23,18 @@
         }
     };
     void PrimaryMemoryLoader::writeObject(const gsm_object& object, const std::unordered_map<std::string, gsm2::tables::AttributeTableType>& map_for_types) {
-//        if (graphId_eventId.first > 0)
-//            std::cerr << "WARNING: this is something should not happen when loading Schema" << std::endl;
         if (graphId_eventId.second != object.id) {
             DEBUG_ASSERT(false);
-//            queued_objects[object.id] = object;
         } else {
             actual_writeObject(object, map_for_types);
             DEBUG_ASSERT(queued_objects.empty());
-//            for (auto it = queued_objects.begin(); it != queued_objects.end(); ) {
-//                if (it->first == graphId_eventId.second) {
-//                    actual_writeObject(it->second, map_for_types);
-//                    it = queued_objects.erase(it);
-//                } else
-//                    break;
-//            }
         }
     }
 
     void PrimaryMemoryLoader::close() {
         forloading.nGraphs = graphId_eventId.first+1;
-        forloading.index();
+        if (doPrimaryMemoryIndex)
+            forloading.index();
     };
 
 

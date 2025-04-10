@@ -83,6 +83,7 @@ class FuzzyMatchSerializer {
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>> twogramAndStringMultiplicity;
 //    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
+    bool consentToFullyFuzzyIndex = true;
 
     void compareStringHashMap(const std::string& strMixed, std::unordered_map<std::string, size_t>& retMap, std::vector<size_t>& retList) const;
     void compareStringHashMap(const std::string& str, std::unordered_map<std::string, size_t>& retMap) const;
@@ -91,6 +92,10 @@ class FuzzyMatchSerializer {
                                               unsigned long size, double threshold,
                           yaucl::structures::PollMap<double, std::pair<size_t,size_t>>  &pollMap) const;
 public:
+
+    inline void deactivateFuzzyIndex() {
+        consentToFullyFuzzyIndex = false;
+    }
 
     void clear() {
         gramToObject.clear();
@@ -114,6 +119,8 @@ public:
         std::vector<std::string> objectGrams = compareString_wordLetterPairs(objectString);
         std::set<std::pair<size_t,size_t>> candidates{};
         std::unordered_map<std::string, size_t> m1;
+        if (!consentToFullyFuzzyIndex)
+            throw std::runtime_error("ERROR: cannot fuzzy match if you disabled the indexing!");
 
         // obtain all the objects that are assoicated to the gram that are within the current objectString in objectStrings
         for (const std::string& gram : objectGrams) {

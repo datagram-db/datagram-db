@@ -31,6 +31,9 @@
 #include <ostream>
 #include <string>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <yaucl/functional/assert.h>
 
 namespace gsm2 {
     namespace tables {
@@ -70,6 +73,20 @@ struct ActivityTable {
         bool operator>=(const record &rhs) const;
     };
 
+    struct secmem_record {
+        size_t l0_id;
+        size_t graph_id;
+        size_t event_id;
+
+        secmem_record();
+        secmem_record(const record& x) {
+            l0_id = x.l0_id;
+            graph_id = x.graph_id;
+            event_id = x.event_id;
+        }
+    };
+
+
     /**
      * Actual table containing the data and the navigation indices. Those are mainly required for reconstructing the log
      * information for isomorphism purposes
@@ -91,7 +108,45 @@ struct ActivityTable {
 
     void load_record(size_t seq_id, size_t activity_label, size_t event_id); // rename: loading_step (emplace_back)
     const std::vector<std::vector<size_t>> & indexing1();
+    const std::vector<std::vector<size_t>>& secondary_memory_indexing1(const std::filesystem::path& folder) {
+        size_t offset = 0;
+        secmem_record cache;
+        // Phase 1
+        std::ofstream  data(folder / "activity_table_data.bin",  std::ios::out | std::ios::binary);
+        std::ofstream  data_primary_index(folder / "activity_table_data_pi.txt",  std::ios::out);
+        size_t offsets = 0;
+        size_t previous_offset = 0;
+        for (size_t k = 0, N = builder.act_id_to_trace_id_and_time.size(); k < N; k++) {
+            cache.l0_id = k;
+            primary_index.emplace_back(offset);
+            auto& ref = builder.act_id_to_trace_id_and_time[k];
+            offsets += ref.size();
+            for (const std::pair<size_t, size_t>& cp : ref) {
+                cache.graph_id = cp.first;
+                cache.event_id = cp.second;
+                data.write((const char*)&cache, sizeof(record));
+                builder.trace_id_to_event_id_to_offset[cp.first][cp.second] = offset++;
+            }
+            data_primary_index << previous_offset << "," << offsets << std::endl;
+            previous_offset = offsets;
+            ref.clear(); // freeing some memory
+        }
+        builder.act_id_to_trace_id_and_time.clear(); // freeing some memory
+        return builder.trace_id_to_event_id_to_offset;
+    }
+
     void indexing2();
+    void secondary_memory_index2(const std::filesystem::path& folder) {
+        std::ofstream  data(folder / "activity_table_secondary_index.bin",  std::ios::out | std::ios::binary);
+        // Phase 2, creating the secondary index, for accessing the beginning and the end of the trace from the table
+        for (size_t sigma_id = 0, M = builder.trace_id_to_event_id_to_offset.size(); sigma_id < M ; sigma_id++) {
+            auto& ref = builder.trace_id_to_event_id_to_offset[sigma_id];
+            for (size_t time = 0, T = ref.size(); time < T; time++) {
+                size_t offset = ref[time];
+                data.write((const char*)&offset, sizeof(offset));
+            }
+        }
+    }
     void sanityCheck();
     void clear();
     void clearIDX() {

@@ -106,12 +106,6 @@ bool DataFormatHandler::open_data_writer(const std::string& outPath,
                        DataFormat output) {
     if (writer)
         return false;
-//    std::pair<DataReader*, DataWriter*> cp{nullptr, nullptr};
-//    if (memory.empty())
-//        return false;
-//    auto& top = memory.top();
-//    if (!top.second)
-//        return false;
     switch (output) {
         case NoDataFormat:
             writer = nullptr;
@@ -160,5 +154,28 @@ void DataFormatHandler::load_to_primary_memory(const std::string& inPath,
         init=false;
         return;
     }
+    init=true;
+}
+
+
+void DataFormatHandler::load_to_secondary_memory(const std::string& inPath,
+                                               const std::string& outFolder,
+                                               DataFormat input) {
+    std::pair<DataReader*, DataWriter*> cp{nullptr, nullptr};
+    cp.second = this->lineargsm.getWriter();
+    ((PrimaryMemoryLoader*)cp.second)->deactivatePrimaryMemoryFutilities();
+
+    loadInput(input, cp);
+    if (!cp.first) {
+        init=false;
+        return;
+    }
+    cp.first->setWriter(cp.second);
+    if (!cp.first->readFromPath(inPath)) {
+        delete cp.first;
+        init=false;
+        return;
+    }
+    ((PrimaryMemoryLoader*)cp.second)->forloading.secondary_memory_index(outFolder);
     init=true;
 }

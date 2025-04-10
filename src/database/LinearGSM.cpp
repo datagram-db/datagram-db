@@ -152,6 +152,131 @@ namespace gsm2 {
             main_registry.clear();
         }
 
+        void LinearGSM::secondary_memory_index(const std::filesystem::path& path) {
+            if (! std::filesystem::exists(path)) {
+                std::filesystem::create_directories(path);
+            }
+
+            // 1. First phase indexing of Activity Tables
+            auto idx = main_registry.secondary_memory_indexing1(path);
+            std::vector<size_t> graphs_to_n_objects;
+            {
+                auto activities_names = std::fstream(path / "activities_list.txt", std::ios::out);
+                for (const auto& label : label_map.int_to_T) {
+                    activities_names << label << std::endl;
+                }
+            }
+
+            // 2. Serializing the secondary memory object scores
+            {
+                size_t total_offset = 0;
+                // These files will be eventually merged into one, so to avoid multiple iterations in primary memory
+//                auto graph_index_offset = std::fstream(path / "database_index.binary", std::ios::out | std::ios::binary);
+                auto object_index_offset = std::fstream(path / "object_index_with_scores_offset.binary", std::ios::out | std::ios::binary);
+                auto scores_data = std::fstream(path / "actual_scores.binary", std::ios::out | std::ios::binary);
+
+
+                // Writing how many graphs are there
+//                graph_index_offset.write((const char*)&nGraphs, sizeof(nGraphs));
+                object_index_offset.write((const char*)&nGraphs, sizeof(nGraphs));
+
+
+                graphs_to_n_objects.reserve(idx.size());
+                for (size_t database_id = 0; database_id < idx.size(); database_id++) {
+                    auto& currentScoreHolder = objectScores[database_id];
+                    size_t n_objects = currentScoreHolder.size();
+                    graphs_to_n_objects.emplace_back(n_objects);
+                    // For each object, it is sufficient to store how many of them are stored, as we
+                    // are assuming an incremental representation for those.
+                    object_index_offset.write((const char*)&n_objects, sizeof(size_t));
+                }
+
+                for (size_t database_id = 0; database_id < idx.size(); database_id++) {
+                    auto& currentScoreHolder = objectScores[database_id];
+                    size_t n_objects = currentScoreHolder.size();
+                    for (size_t j = 0; j<objectScores.at(database_id).size(); j++) {
+                        // Writing the offset for the current object's scores
+                        const auto& scores = objectScores.at(database_id).at(j);
+//                        object_index_offset.write((const char*)&total_offset, sizeof(size_t));
+                        size_t n_scores_total = scores.size();
+                        for (const auto& ref : scores) {
+                            scores_data.write((const char*)&ref, sizeof(double));
+                        }
+                        object_index_offset.write((const char*)&n_scores_total, sizeof(size_t));
+                    }
+                }
+            }
+
+            // 3. Containment Table Serialization
+            {
+                //to keep the number of file descriptors compact, we restain to store all of th elements within the containment tables
+                //into one single table, where a major external index is going to store the offset for each of the tables of interest
+                std::vector<std::string> ensure_label_order;
+                {
+                    std:: ofstream containment_table_headers(path / "containment_headers.txt", std::ios::out);
+                    for (const auto& [key, table] : containment_tables) {
+                        containment_table_headers << key << std::endl;
+                        ensure_label_order.emplace_back(key);
+                    }
+                }
+
+                size_t tables_start = 0;
+                std::ofstream containment_tables_f(path / "database_containment_table.binary", std::ios::out | std::ios::binary);
+                std::ofstream containment_primary_indices(path / "database_containment_table_pi.binary", std::ios::out | std::ios::binary);
+                std::ofstream containment_secondary_indices(path / "database_containment_table_si.binary", std::ios::out | std::ios::binary);
+
+                size_t primary_offsets = 0, first_record_id = 0, table_entries = 0;
+                for (auto& [key, table] : containment_tables) {
+                    table.sort();
+                    primary_offsets = table.count_primary_entries();
+                    table_entries = table.table.size();
+                    containment_primary_indices.write((const char*)&primary_offsets, sizeof(size_t));
+                    containment_tables_f.write((const char*)&table_entries, sizeof(size_t));
+                }
+                for (size_t i = 0, N = ensure_label_order.size(); i<N; i++) {
+                    const auto& key = ensure_label_order.at(i);
+#ifdef DEBUG
+                    std::cout << "containment: " << key << std::endl;
+#endif
+                    auto it = containment_tables.find(key);
+                    DEBUG_ASSERT(it != containment_tables.end());
+                    first_record_id = it->second.secondary_memory_index(i, first_record_id, graphs_to_n_objects, containment_tables_f,containment_primary_indices, containment_secondary_indices);
+                }
+            }
+
+
+            // 3. Object Attributes Serialization
+            {
+                //to keep the number of file descriptors compact, we restain to store all of th elements within the containment tables
+                //into one single table, where a major external index is going to store the offset for each of the tables of interest
+                std::vector<std::string> ensure_label_order;
+                {
+                    std:: ofstream containment_table_headers(path / "attributes_headers.txt", std::ios::out);
+                    for (const auto& [key, table] : KeyValueProperties) {
+                        containment_table_headers << key << std::endl;
+                        containment_table_headers << magic_enum::enum_name(table.type) << std::endl;
+                        ensure_label_order.emplace_back(key);
+                    }
+                }
+
+                size_t tables_start = 0;
+                std::ofstream containment_tables_f(path / "database_attributes_table.binary", std::ios::out | std::ios::binary);
+                std::ofstream containment_primary_indices(path / "database_attributes_table_pi.binary", std::ios::out | std::ios::binary);
+                std::ofstream containment_secondary_indices(path / "database_attributes_table_si.binary", std::ios::out | std::ios::binary);
+
+                size_t primary_offsets = 0, first_record_id = 0;
+                for (size_t i = 0, N = ensure_label_order.size(); i<N; i++) {
+                    const auto& key = ensure_label_order.at(i);
+                    auto it = KeyValueProperties.find(key);
+                    DEBUG_ASSERT(it != KeyValueProperties.end());
+                    it->second.secondary_memory_index(idx, graphs_to_n_objects, containment_tables_f,containment_primary_indices, containment_secondary_indices);
+                }
+            }
+
+            // 4. Finalising indeixng
+            main_registry.secondary_memory_index2(path);
+        }
+
         void LinearGSM::index() {
             objectScores.resize(nGraphs);
             const auto& idx = main_registry.indexing1();

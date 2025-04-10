@@ -9,9 +9,6 @@
 
 struct NestingState {
     gsm_object object;
-//    std::vector<std::pair<std::string,union_minimal>> data_row;
-//    std::vector<double> scores;
-//    std::vector<std::pair<std::string,size_t>> containment;
     const Entity* entity_stack{nullptr};
     bool skipCurrentKey;
     std::string key{};

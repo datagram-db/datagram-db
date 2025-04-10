@@ -168,6 +168,62 @@ namespace gsm2 {
             std::ostream &resolve_and_print(std::ostream &os, const AttributeTable::record &x) const;
             void record_load(size_t act_id, const union_type &val, size_t tid, size_t eid);
             void index(const ActivityTable&, const std::vector<std::vector<size_t>> &trace_id_to_event_id_to_offset);
+
+            void secondary_memory_index(const std::vector<std::vector<size_t>> &idx2,
+                                        const std::vector<size_t>& graph_to_n_objects,
+                                        std::ofstream& data_table,
+                                        std::ofstream& primary_index_f,
+                                        std::ofstream& flat_secondary_index_f) {
+                record cache;
+                size_t count = 0;
+                for (size_t val : graph_to_n_objects)
+                    count+=val;
+                std::vector<size_t> flat_secondary_index(count);
+                for (size_t act_id = 0, N = elements.size(); act_id < N; act_id++) {
+                    cache.act = act_id;
+                    auto& ref = elements[act_id];
+                    size_t begin = 0;
+                    size_t current_table_size = 0;
+                    if (!ref.empty()) {
+                        std::map<union_type, std::vector<size_t>> valueToOffsetInTable;
+                        for (const auto& val_offset : ref) {
+                            for (const auto& traceid_eventid : val_offset.second) {
+                                size_t offset = idx2.at(traceid_eventid.first).at(traceid_eventid.second);
+                                valueToOffsetInTable[val_offset.first].emplace_back(offset);
+                            }
+                        }
+                        for (auto it = valueToOffsetInTable.begin(); it != valueToOffsetInTable.end(); it++) {
+                            std::sort(it->second.begin(), it->second.end());
+                            size_t val = storeLoad(it->first); // TODO
+                            cache.value = val;
+                            std::string current_string;
+                            if (type == StringAtt) {
+                                current_string = std::get<std::string>(it->first);
+                            }
+                            for (const auto& refx : it->second) {
+                                if (type == StringAtt)
+                                    string_offset_mapping[current_string].emplace_back(current_table_size);
+                                DEBUG_ASSERT(refx < flat_secondary_index.size());
+                                flat_secondary_index[refx] = current_table_size;
+//                                secondary_index2[{at.table.at(refx).graph_id, at.table.at(refx).event_id}] =
+                                cache.act_table_offset = refx;
+                                data_table.write((const char*)&cache, sizeof(cache));
+                                current_table_size += 1;
+                            }
+                        }
+                        valueToOffsetInTable.clear();
+                        ref.clear();
+                    }
+                    size_t end = current_table_size;
+                    primary_index_f.write((const char*)&begin, sizeof(begin));
+                    primary_index_f.write((const char*)&end, sizeof(end));
+                }
+                for (const size_t& offset : flat_secondary_index) {
+                    flat_secondary_index_f.write((const char*)&offset, sizeof(offset));
+                }
+                elements.clear();
+            }
+
             union_type resolve(const record &x) const;
 
             std::vector<std::vector<std::pair<const AttributeTable::record *, const AttributeTable::record *>>>

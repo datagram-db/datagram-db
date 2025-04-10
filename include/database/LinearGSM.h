@@ -70,6 +70,11 @@ namespace gsm2 {
             bool doInitLoading{true};
             size_t noLabel{0};
 
+            void ells_and_xis_just_as_repositories(){
+                ell_values.deactivateFuzzyIndex();
+                xi_values.deactivateFuzzyIndex();
+            }
+
             const std::map<size_t, std::string>::const_iterator findLabelFromID(size_t k) const {
                 DEBUG_ASSERT(minRecordToContaimentLabel.begin()->first == 0);
                 auto it = minRecordToContaimentLabel.lower_bound(k);
@@ -153,7 +158,6 @@ namespace gsm2 {
                     result.id = record.event_id;
                     result.xi = xi_values.resolve_object_id(cp);
                     result.ell = ell_values.resolve_object_id(cp);
-//                    size_t gid;
                     for (const auto& [keyAttribute, Table] : KeyValueProperties) {
                         auto tmp2 = Table.resolve_record_if_exists2(offsetMainRegistryTable);
                         if (tmp2) {
@@ -161,8 +165,6 @@ namespace gsm2 {
 //                            tmp = tmp+"|"+keyAttribute+"="+(std::holds_alternative <std::string>(tmp2.value()) ? std::get<std::string>(tmp2.value()) : std::to_string(std::get<double>(tmp2.value())));
                         }
                     }
-//                    gid = g.addNewNodeWithLabel(tmp);
-//                    DEBUG_ASSERT(id == gid);
                     offsetMainRegistryTable++;
                 }
                 for (const auto& [edgeLabel, outEdges] : containment_tables) {
@@ -170,10 +172,6 @@ namespace gsm2 {
                         const auto& map = nodesBeingInsertedAlready.at(record.graph_id);
                         gsm_object& result = simpleGraphs[record.graph_id][record.object_id];
                         result.phi[edgeLabel].emplace_back(record.id_contained);
-//                        auto src = map.getKey(record.object_id);
-//                        auto dst = map.getKey(record.id_contained);
-//                        auto& g = simpleGraphs[record.graph_id];
-//                        g.addNewEdgeFromId(src, dst, edgeLabel);
                     }
                 }
             }
@@ -208,6 +206,12 @@ namespace gsm2 {
 
             void clear();
             void index();
+
+            /**
+             *
+             * @param path The folder where to serialize the content.
+             */
+            void secondary_memory_index(const std::filesystem::path& path);
 
 
             inline ssize_t getMappedValueFromAction(const std::string &act) const {
@@ -307,7 +311,6 @@ namespace gsm2 {
 
             inline std::vector<std::string> resolveContainmentLabels(size_t graphid, size_t id) const {
                 std::vector<std::string> result;
-//                std::pair<size_t,size_t>cp{graphid, id};
                 for (const auto& [key, table] : containment_tables) {
                     auto it = table.secondary_index.find(graphid);
                     if (table.secondary_index.find(graphid)!= table.secondary_index.end()) {
@@ -361,74 +364,6 @@ namespace gsm2 {
                                                                        const std::unordered_map<std::string, gsm2::tables::AttributeTableType> &schema
             );
 
-
-//            /**
-//             * Returning all the contained objects by the specified object
-//             * @param object
-//             * @return
-//             */
-//            inline std::vector<result> phi_all_records(const result&object) const {
-//                std::vector<result> result;
-//                const auto& labels = ell(object);
-//                ssize_t act_label = labels.empty() ? getMappedValueFromAction("") : getMappedValueFromAction(labels.at(0));
-//                for (const auto& [k,v] : containment_tables) {
-//                    auto it2 = v.primary_index.find(act_label);
-//                    if (it2 == v.primary_index.end())
-//                        continue;
-//                    auto iterator = it2->second;
-//                    iterator.second++;
-//                    for (; iterator.first != iterator.second; iterator.first++) {
-//                        result
-//                                .emplace_back(iterator.first->graph_id,iterator.first->id_contained,iterator.first->w_contained);
-//                    }
-//                }
-//                std::sort(result.begin(), result.end());
-//                return result;
-//            }
-
-//            /**
-//             * Returns all the containment labels assocaited to the given object
-//             * @param object
-//             * @return
-//             */
-//            inline std::vector<std::string> phi_labels(const result&object) const {
-//                std::vector<std::string> result;
-//                const auto& labels = ell(object);
-//                ssize_t act_label = labels.empty() ? getMappedValueFromAction("") : getMappedValueFromAction(labels.at(0));
-//                for (const auto& [k,v] : containment_tables) {
-//                    auto it2 = v.primary_index.find(act_label);
-//                    if (it2 == v.primary_index.end())
-//                        continue;
-//                    result.emplace_back(k);
-//                }
-//                return result;
-//            }
-//            /**
-//             * Specifies the containment function for a specific object
-//             * @param object        Container object
-//             * @param label_phi     Containment label (phi(k, object))
-//             * @param removed       Whether the containments shall be removed
-//             * @return Contained obejcts
-//             */
-//            inline std::vector<result> phi(const result&object, const std::string& label_phi) const {
-//                std::vector<result> result;
-//                auto it = containment_tables.find(label_phi);
-//                if (it == containment_tables.end())
-//                    return result;
-//                const auto& labels = ell(object);
-//                ssize_t act_label = labels.empty() ? getMappedValueFromAction("") : getMappedValueFromAction(labels.at(0));
-//                auto it2 = it->second.primary_index.find(act_label);
-//                if (it2 == it->second.primary_index.end())
-//                    return result;
-//                auto iterator = it2->second;
-//                iterator.second++;
-//                for (; iterator.first != iterator.second; iterator.first++) {
-//                    result
-//                            .emplace_back(iterator.first->graph_id,iterator.first->id_contained,iterator.first->w_contained);
-//                }
-//                std::sort(result.begin(), result.end());
-//                return result;
-//            }
 
             /**
              * This returns a map associating the containers to the contents across multiple graphs
