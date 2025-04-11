@@ -37,6 +37,7 @@
 #include "SimplifiedFuzzyStringMatching.h"
 #include "queries/DataQuery.h"
 #include "ActivityTable.h"
+#include <yaucl/data/NDPFuzzyStringMatching.h>
 
 
 
@@ -92,6 +93,40 @@ namespace gsm2 {
             return std::numeric_limits<double>::max();
         }
 
+        template <typename T>
+         size_t my_storeLoad(gsm2::tables::AttributeTableType type,
+                                          const std::variant<double, size_t, long long int, std::string, bool> &x,
+                                          T& ptr) {
+            switch (type) {
+                case gsm2::tables::DoubleAtt: {
+                    DEBUG_ASSERT(std::holds_alternative<double>(x));
+                    double tmp = std::get<double>(x);
+                    return *(size_t*)(&tmp);
+                }
+
+                case gsm2::tables::LongAtt: {
+                    DEBUG_ASSERT(std::holds_alternative<long long>(x));
+                    long long tmp = std::get<long long>(x);
+                    return *(size_t*)(&tmp);
+                }
+
+                case gsm2::tables::StringAtt: {
+                    DEBUG_ASSERT(std::holds_alternative<std::string>(x));
+                    std::string tmp = std::get<std::string>(x);
+                    return ptr.put(tmp).first;
+                }
+                case gsm2::tables::BoolAtt: {
+                    DEBUG_ASSERT(std::holds_alternative<bool>(x));
+                    return std::get<bool>(x) ? 1 : 0;
+                }
+                    //case SizeTAtt:
+                default:
+                    DEBUG_ASSERT(std::holds_alternative<size_t>(x));
+                    // TODO: hierarchical types!, https://dl.acm.org/doi/10.1145/3410566.3410583
+                    return std::get<size_t>(x);
+            }
+        }
+
         struct AttributeTable {
             std::string attr_name;
             SimplifiedFuzzyStringMatching ptr;
@@ -136,6 +171,7 @@ namespace gsm2 {
             };
 
             std::vector<record> table;
+            size_t overall_size = 0;
             /// TODO: struct disjunctive_range_query_result {
             /// TODO: struct range_query_result
 
@@ -169,21 +205,22 @@ namespace gsm2 {
             void record_load(size_t act_id, const union_type &val, size_t tid, size_t eid);
             void index(const ActivityTable&, const std::vector<std::vector<size_t>> &trace_id_to_event_id_to_offset);
 
+            template <typename T>
             void secondary_memory_index(const std::vector<std::vector<size_t>> &idx2,
                                         const std::vector<size_t>& graph_to_n_objects,
                                         std::ofstream& data_table,
-                                        std::ofstream& primary_index_f,
-                                        std::ofstream& flat_secondary_index_f) {
+                                        std::ofstream& flat_secondary_index_f,
+                                        T& all_string_attributes_repo) {
                 record cache;
                 size_t count = 0;
                 for (size_t val : graph_to_n_objects)
                     count+=val;
-                std::vector<size_t> flat_secondary_index(count);
+                std::vector<size_t> flat_secondary_index(count, -1);
+                size_t current_table_size = 0;
                 for (size_t act_id = 0, N = elements.size(); act_id < N; act_id++) {
                     cache.act = act_id;
                     auto& ref = elements[act_id];
-                    size_t begin = 0;
-                    size_t current_table_size = 0;
+//                    size_t begin = 0;
                     if (!ref.empty()) {
                         std::map<union_type, std::vector<size_t>> valueToOffsetInTable;
                         for (const auto& val_offset : ref) {
@@ -194,7 +231,7 @@ namespace gsm2 {
                         }
                         for (auto it = valueToOffsetInTable.begin(); it != valueToOffsetInTable.end(); it++) {
                             std::sort(it->second.begin(), it->second.end());
-                            size_t val = storeLoad(it->first); // TODO
+                            size_t val = my_storeLoad(type, it->first, all_string_attributes_repo); // TODO
                             cache.value = val;
                             std::string current_string;
                             if (type == StringAtt) {
@@ -214,9 +251,9 @@ namespace gsm2 {
                         valueToOffsetInTable.clear();
                         ref.clear();
                     }
-                    size_t end = current_table_size;
-                    primary_index_f.write((const char*)&begin, sizeof(begin));
-                    primary_index_f.write((const char*)&end, sizeof(end));
+//                    size_t end = current_table_size;
+//                    primary_index_f.write((const char*)&begin, sizeof(begin));
+//                    primary_index_f.write((const char*)&end, sizeof(end));
                 }
                 for (const size_t& offset : flat_secondary_index) {
                     flat_secondary_index_f.write((const char*)&offset, sizeof(offset));

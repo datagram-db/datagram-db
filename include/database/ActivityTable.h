@@ -78,7 +78,7 @@ struct ActivityTable {
         size_t graph_id;
         size_t event_id;
 
-        secmem_record();
+        secmem_record() {};
         secmem_record(const record& x) {
             l0_id = x.l0_id;
             graph_id = x.graph_id;
@@ -124,10 +124,10 @@ struct ActivityTable {
             for (const std::pair<size_t, size_t>& cp : ref) {
                 cache.graph_id = cp.first;
                 cache.event_id = cp.second;
-                data.write((const char*)&cache, sizeof(record));
+                data.write((const char*)&cache, sizeof(cache));
                 builder.trace_id_to_event_id_to_offset[cp.first][cp.second] = offset++;
             }
-            data_primary_index << previous_offset << "," << offsets << std::endl;
+            data_primary_index << k << "," << previous_offset << "," << offsets << std::endl;
             previous_offset = offsets;
             ref.clear(); // freeing some memory
         }

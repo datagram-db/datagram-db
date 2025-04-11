@@ -348,6 +348,8 @@ bool SchemaReader::load_csv(const Entity& e, bool isFirstPass) {
         size_t idx = 0;
         gsm_object current;
         current.id = globalObjectId;
+        current.ell.emplace_back(e.name);
+        current.ell.emplace_back(e.namespace_);
         for (auto &field : row) {
             auto offset = header_mapping.empty() ? idx : header_mapping[idx];
             if ((!field.empty()) && (offset != -1)) {

@@ -33,9 +33,9 @@
 #include "yaucl/structures/PollMap.h"
 #include "PollMap.h"
 
-
-
 std::vector<std::string> compareString_wordLetterPairs(const std::string& strMixed);
+
+
 
 class SimplifiedFuzzyStringMatching {
     static_assert(sizeof(short) == sizeof(char)*2, "Chars should be double the size than chars");
@@ -139,6 +139,10 @@ public:
         rankCollectionOf(candidates, m1, ogSize, threshold, toReturnTop);
 
         result(toReturnTop.getValueScore());
+    }
+
+    inline const std::map<std::pair<size_t,size_t>, std::vector<std::string>>& getObjectResolution() const {
+        return objectMultipleStirngs;
     }
 
     const std::vector<std::string>& resolve_object_id(const std::pair<size_t,size_t>& object_id) const {

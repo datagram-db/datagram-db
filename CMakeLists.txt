@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(gsm2)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_FLAGS "-fconstexpr-depth=5023 -m64")
 cmake_policy(SET CMP0067 NEW)
 add_subdirectory(submodules/capnproto)
 include_directories(submodules/capnproto/c++/src/)
@@ -35,11 +36,11 @@ include(CTest)
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
     message(WARNING "Compiling in debug mode")
-    add_compile_definitions(DEBUG)
+    add_definitions(-DDEBUG)
     set(CMAKE_CXX_FLAGS_DEBUG "-g")
 else()
-    message(WARNING "Compiling in optimized mode. Level=3")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+    message(WARNING "Compiling in optimized mode. Level=2")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 include_directories(submodules/args)
@@ -79,6 +80,8 @@ add_library(yaucl_data OBJECT
         submodules/yaucl/src/yaucl/data/mmapFile.cpp
         submodules/yaucl/src/yaucl/data/VariadicSizeArrayElements.cpp
         submodules/yaucl/src/yaucl/data/VarSizeNDPSorter.cpp
+        submodules/yaucl/src/yaucl/data/NDPFuzzyStringMatching.cpp
+        submodules/yaucl/src/yaucl/data/SimpleStringSerializer.cpp
         submodules/yaucl/src/yaucl/data/xml.cpp
         submodules/yaucl/include/yaucl/data/json.h
         submodules/yaucl/src/yaucl/data/VarSizeNDPSorter.cpp
@@ -192,7 +195,7 @@ add_library(gsm2 OBJECT antlr4/graph_grammar/simple_graph_grammarLexer.cpp antlr
         include/parser/ra_readers/RandomAccessGSMReader.h
         src/parser/ra_readers/RandomAccessGSMReader.cpp
 )
-target_link_libraries(gsm2 antlr4_static gsm_load gsm_script yaucl_structures roaring  yaucl_hashing yaucl_graph )
+target_link_libraries(gsm2 yaucl_data antlr4_static gsm_load gsm_script yaucl_structures roaring  yaucl_hashing yaucl_graph )
 
 add_executable(gsm2_server main.cpp src/queries/NestedResultTable.cpp include/queries/NestedResultTable.h)
 target_link_libraries(gsm2_server antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)# antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2 gsm_script)
@@ -209,7 +212,7 @@ add_executable(data_loader_test data.cpp
 
 # add STXXL includes path
 #include_directories(${STXXL_INCLUDE_DIRS})
-target_link_libraries(data_loader_test antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)
+target_link_libraries(data_loader_test yaucl_data antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)
 
 #enable_testing ()
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)

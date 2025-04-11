@@ -1,4 +1,0 @@
-paper
-author
-src
-dst
