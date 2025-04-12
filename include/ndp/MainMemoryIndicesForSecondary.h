@@ -1,56 +1,21 @@
-#include <easylogging++.h>
-INITIALIZE_EASYLOGGINGPP
-#include <iostream>
-#include <parser/schema/DataLoaderFromSchema.h>
+//
+// Created by giacomo on 12/04/25.
+//
 
-#define DEBUG
-
-#include <ndp/main_memory_index.h>
+#ifndef GSM2_MAINMEMORYINDICESFORSECONDARY_H
+#define GSM2_MAINMEMORYINDICESFORSECONDARY_H
 
 #include <yaucl/data/SimpleStringSerializer.h>
-void final_writing(DataFormatHandler& dfh) {
-    dfh.load_to_secondary_memory("/home/giacomo/Scaricati/Unibench-0.2/Dataset/Schema.txt",
-                                 "/home/giacomo/projects/gsm2/secondary_tests/final",
-                                 DataFormat::Schema);
-}
-
-void minimal_writing(DataFormatHandler& dfh) {
-    dfh.load_to_secondary_memory("/home/giacomo/projects/DATA_IDEAS2021/Schema.txt",
-                                 "/home/giacomo/projects/gsm2/secondary_tests/minimal",
-                                 DataFormat::Schema);
-//    std::cout << dfh.count_databases() << std::endl;
-    //    dfh.data_converter("/home/giacomo/projects/DATA_IDEAS2021/Schema.txt",
-//                       DataFormat::Schema,
-//                       "/home/giacomo/projects/DATA_IDEAS2021/gsm.txt",
-//                       DataFormat::GSM);
-
-}
-
-#include <yaucl/data/VariadicSizeArrayElements.h>
-
-
+#include <ndp/main_memory_index.h>
+#include <database/gsm_object.h>
+#include <database/PhiTable.h>
 
 struct MainMemoryIndicesForSecondary {
-    std::vector<GraphInformation> graph_information;
+    std::vector <GraphInformation> graph_information;
     size_t total_objects;
 
 
-
-
-    MainMemoryIndicesForSecondary(const std::filesystem::path& path) : containment_offsets(path / "database_containment_table_si.binary"),
-                                                                       ells(path / "fuzzyStringMatching"/"object_labels_ells"),
-                                                                       xis(path / "fuzzyStringMatching"/"object_values_xis"),
-                                                                       attributes_offsets(path / "database_attributes_table_si.binary"),
-                                                                       database_attributes_table(path / "database_attributes_table.binary"),
-                                                                       database_containment_table(path / "database_containment_table.binary"),
-                                                                       string_attributes(path / "fuzzyStringMatching"/ "string_attributes"),
-                                                                       activity_table(path / "activity_table_data.bin") {
-        init_basics_graphs(path);
-        init_ellxi(path);
-        init_attributes(path/ "attributes_headers.txt");
-        init_containment(path/ "containment_headers.txt");
-        init_activities(path);
-    }
+    MainMemoryIndicesForSecondary(const std::filesystem::path &path);
 
     inline size_t getNGraphs() const { return graph_information.size(); }
     inline size_t getNObjects() const { return total_objects; }
@@ -68,7 +33,7 @@ struct MainMemoryIndicesForSecondary {
         auto it = activity_name_to_offset.find(activity);
         if (it == activity_name_to_offset.end())
             return {nullptr, nullptr};
-       return {activity_table.begin() + it->second.offset_begin, activity_table.begin() + it->second.offset_end};
+        return {activity_table.begin() + it->second.offset_begin, activity_table.begin() + it->second.offset_end};
     }
 
     // Containment tables
@@ -315,85 +280,27 @@ struct MainMemoryIndicesForSecondary {
     }
 
     void print() {
-            for (size_t graph_id = 0, N = getNGraphs(); graph_id < N; graph_id ++) {
-                for (size_t object_id = 0, M = getNObjects(graph_id); object_id < M; object_id++) {
-                    gsm_object object;
-                    reconstruct_object(graph_id, object_id, object);
-                    object.out_json(std::cout);
-                    std::cout << std::endl;
-                }
+        for (size_t graph_id = 0, N = getNGraphs(); graph_id < N; graph_id ++) {
+            for (size_t object_id = 0, M = getNObjects(graph_id); object_id < M; object_id++) {
+                gsm_object object;
+                reconstruct_object(graph_id, object_id, object);
+                object.out_json(std::cout);
+                std::cout << std::endl;
             }
+        }
     }
 
 
-private:
     yaucl::data::FixedSizeArrayElements<size_t> containment_offsets, attributes_offsets, database_attributes_table, database_containment_table;
     yaucl::data::FixedSizeArrayElements<gsm2::tables::ActivityTable::secmem_record> activity_table;
     NDPFuzzyStringMatching ells, xis;
     SimpleStringReader string_attributes;
     size_t n_graphs;
-};
-
-void load_database_test(const std::filesystem::path& path) {
-    MainMemoryIndicesForSecondary data(path);
-
-    auto cp = data.getTable("Author");
-    for (auto it = cp.first; it != cp.second; it++) {
-        gsm_object object;
-        data.reconstruct_object(it->graph_id, it->event_id, object);
-        object.out_json(std::cout);
-        std::cout << std::endl;
-    }
-
-//    data.print();
-}
-
-class Integers
-{
-public:
-    struct Iterator
-    {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type   = std::ptrdiff_t;
-        using value_type        = gsm2::tables::PhiTable::secmem_record;
-        using pointer           = gsm2::tables::PhiTable::secmem_record*;
-        using reference         = gsm2::tables::PhiTable::secmem_record&;
-
-        Iterator(pointer ptr) : m_ptr(ptr) {}
-
-        reference operator*() const { return *m_ptr; }
-        pointer operator->() { return m_ptr; }
-        Iterator& operator++() { m_ptr++; return *this; }
-        Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
-        friend bool operator== (const Iterator& a, const Iterator& b) { return a.m_ptr == b.m_ptr; };
-        friend bool operator!= (const Iterator& a, const Iterator& b) { return a.m_ptr != b.m_ptr; };
-
-    private:
-        pointer m_ptr;
-    };
-
-    Iterator begin() { return Iterator(&m_data[0]); }
-    Iterator end()   { return Iterator(&m_data[200]); }
 
 private:
-    int m_data[200];
+
+
 };
 
-int main(void) {
-    bool serialize = true;
-    if (serialize) {
-        DataFormatHandler dfh;
-        final_writing(dfh);
-//        SimpleStringReader kdl("/home/giacomo/projects/gsm2/secondary_tests/minimal/fuzzyStringMatching/string_attributes");
-//        for (size_t i = 0, N = kdl.size(); i<N; i++) {
-//            size_t len = kdl.strlen(i);
-//            const char* val = kdl.str(i);
-//            std::string copy(val, len);
-//            std::cout << copy << std::endl;
-//        }
-//        std::cout << kdl.query_equals("Dan") << std::endl;
-    }
-    load_database_test("/home/giacomo/projects/gsm2/secondary_tests/minimal");
 
-    return EXIT_SUCCESS;
-}
+#endif //GSM2_MAINMEMORYINDICESFORSECONDARY_H
