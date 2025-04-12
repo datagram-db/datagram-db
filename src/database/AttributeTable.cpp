@@ -25,6 +25,8 @@
 
 #include "database/AttributeTable.h"
 
+
+
 namespace gsm2 {
     namespace tables {
         AttributeTable::record::record(size_t act, size_t value, size_t actTableOffset) : act(act), value(value),
@@ -75,6 +77,7 @@ namespace gsm2 {
 //            if (tid > 0)
 //                std::cerr << "WARNING: This is something should not happen in Schema loading" << std::endl;
             elements[act_id][val].emplace_back(tid, eid);
+            overall_size++;
         }
 
 

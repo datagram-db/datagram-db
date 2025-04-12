@@ -30,10 +30,64 @@
 #include <algorithm>
 #include <unordered_map>
 #include <yaucl/hashing/pair_hash.h>
+#include <fstream>
+#include <yaucl/functional/assert.h>
+#include <iostream>
 
 namespace gsm2 {
     namespace tables {
         struct PhiTable {
+            static inline void write_secmem(const std::vector<size_t>& graph_to_n_objects,
+                                            std::unordered_map<size_t, std::unordered_map<size_t, std::vector<size_t>>>& secondary_index2,
+                                            std::ofstream& secondary_index_file) {
+                size_t offset_secondary_begin = 0;
+                size_t offset_secondary_end = 0;
+                for (size_t n_graphs = 0, N = graph_to_n_objects.size(); n_graphs<N; n_graphs++) {
+                    auto it = secondary_index2.find(n_graphs);
+                    if (it == secondary_index2.end()) {
+                        for (size_t n_object = 0, M = graph_to_n_objects.at(n_graphs); n_object<M; n_object++ ) {
+                            secondary_index_file.write((const char*)&offset_secondary_end, sizeof(size_t));
+                            secondary_index_file.write((const char*)&offset_secondary_end, sizeof(size_t));
+                        }
+                    } else {
+                        auto& mappa = it->second;
+                        for (size_t n_object = 0, M = graph_to_n_objects.at(n_graphs); n_object<M; n_object++ ) {
+                            auto it2 = mappa.find(n_object);
+                            if (it2 == mappa.end()) {
+                                secondary_index_file.write((const char*)&offset_secondary_end, sizeof(size_t));
+                                secondary_index_file.write((const char*)&offset_secondary_end, sizeof(size_t));
+                            } else {
+                                offset_secondary_begin = offset_secondary_end;
+                                secondary_index_file.write((const char*)&offset_secondary_begin, sizeof(size_t));
+                                offset_secondary_end += (it2->second.size());
+                                secondary_index_file.write((const char*)&offset_secondary_end, sizeof(size_t));
+                            }
+                        }
+                    }
+                }
+                for (size_t n_graphs = 0, N = graph_to_n_objects.size(); n_graphs<N; n_graphs++) {
+                    auto it = secondary_index2.find(n_graphs);
+                    if (it != secondary_index2.end())  {
+                        auto& mappa = it->second;
+                        for (size_t n_object = 0, M = graph_to_n_objects.at(n_graphs); n_object<M; n_object++ ) {
+                            auto it2 = mappa.find(n_object);
+                            if (it2 != mappa.end()) {
+                                for (const auto& item : it2->second) {
+                                    secondary_index_file.write((const char*)&item, sizeof(item));
+                                }
+                            }
+                        }
+                    }
+                }
+                secondary_index2.clear();
+            }
+
+            struct primary_index_2m {
+                size_t l0;
+                size_t begin;
+                size_t end;
+            };
+
             struct record {
                 size_t l0_id;
                 size_t graph_id;
@@ -55,6 +109,42 @@ namespace gsm2 {
                 bool operator>=(const record &rhs) const;
             };
 
+            struct secmem_record {
+                size_t label_id;
+                size_t l0_id;
+                size_t graph_id;
+                size_t object_id;   // src
+                double w_contained; // Weight
+                size_t id_contained;// dst
+                size_t instance_id;
+                size_t record_id;
+
+                secmem_record(const secmem_record&) = default;
+                secmem_record(secmem_record&&) = default;
+                secmem_record& operator=(const secmem_record&) = default;
+                secmem_record& operator=(secmem_record&&) = default;
+                secmem_record(size_t label_id, size_t l0Id = 0, const std::pair<size_t,size_t>& nodeId = {0,0}, double wContained = 1.0, size_t idContained = 1, size_t instance_id = 0);
+
+                secmem_record& operator=(const record& x) {
+                    l0_id = x.l0_id;
+                    graph_id = x.graph_id;
+                    object_id = x.object_id;
+                    w_contained = x.w_contained;
+                    id_contained = x.id_contained;
+                    instance_id = x.instance_id;
+                    record_id = x.record_id;
+                    return *this;
+                }
+
+                friend std::ostream& operator<<(std::ostream& os, const secmem_record& dt) {
+                    return os << "graph #" << dt.graph_id << ": (" << dt.object_id << ")-->(" << dt.id_contained << ")";
+                }
+                bool operator<(const secmem_record &rhs) const;
+                bool operator>(const secmem_record &rhs) const;
+                bool operator<=(const secmem_record &rhs) const;
+                bool operator>=(const secmem_record &rhs) const;
+            };
+
 //            struct primary_index {
 //                size_t l0_id;
 //                const struct record* begin;
@@ -70,10 +160,76 @@ namespace gsm2 {
             std::vector<struct record> table;
             std::unordered_map<size_t, std::pair<const struct record*,const struct record*>> primary_index;
             std::unordered_map<size_t, std::unordered_map<size_t, std::vector<const struct record*>>> secondary_index;
-
+            bool sorted = false;
             void add(size_t l0Id = 0, const std::pair<size_t,size_t>& nodeId = {0,0}, double wContained = 1.0, size_t idContained = 1, size_t instance_id = 0);
 
             size_t index(size_t first_record_id);
+
+            inline void sort() {
+                if (!sorted) {
+                    std::sort(table.begin(), table.end()); // sorting the table in primary memory, for then serializing each record directly in secondary
+                    sorted = true;
+                }
+            }
+
+            size_t count_primary_entries() {
+                DEBUG_ASSERT(sorted);
+                size_t N = table.size();
+                size_t lIdPrev = 0;
+                size_t count = 0;
+                for (size_t i = 0; i<N; i++ ) {
+                    auto& ref = table[i];
+                    if (i == 0) {
+                        lIdPrev = ref.l0_id;
+                    } else if (ref.l0_id != lIdPrev) {
+                        count++;
+                        lIdPrev = ref.l0_id;
+                    }
+                }
+                return (count+1);
+            }
+
+            inline size_t secondary_memory_index(size_t edge_label_id,
+                                          size_t first_record_id,
+                                          const std::vector<size_t>& graph_to_n_objects,
+                                          std::ofstream& table_storage,
+                                          //std::ofstream& primary_index_file,
+                                          std::ofstream& secondary_index_file,
+                                                 std::ofstream& secondary_index_file_inv) {
+
+                std::unordered_map<size_t, std::unordered_map<size_t, std::vector<size_t>>> secondary_index2;
+                std::unordered_map<size_t, std::unordered_map<size_t, std::vector<size_t>>> secondary_index3;
+                sort();
+                size_t lIdPrev = 0;
+                size_t N = table.size();
+                std::pair<size_t, size_t> cp;
+                secmem_record cache(edge_label_id);
+                for (size_t i = 0; i<N; i++ ) {
+                    auto& ref = table[i];
+                    cp.first = ref.graph_id;
+                    cp.second = ref.object_id;
+                    secondary_index2[cp.first][cp.second].emplace_back(i);
+                    secondary_index3[cp.first][ref.id_contained].emplace_back(i);
+                    if (i == 0) {
+                        lIdPrev = ref.l0_id;
+                    } else if (ref.l0_id != lIdPrev) {
+                        lIdPrev = ref.l0_id;
+                    }
+                    ref.record_id = first_record_id+i;
+                    cache = ref;
+                    table_storage.write((const char*)&cache, sizeof(secmem_record));
+#ifdef DEBUG
+//                    std::cout << cache << std::endl;
+#endif
+                }
+                write_secmem(graph_to_n_objects, secondary_index2, secondary_index_file);
+                write_secmem(graph_to_n_objects, secondary_index3, secondary_index_file_inv);
+                primary_index.clear();
+                secondary_index.clear();
+                size_t tmp =  first_record_id+table.size();
+                table.clear();
+                return tmp;
+            }
         };
     } // gsm2
 } // tables

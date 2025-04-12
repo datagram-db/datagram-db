@@ -105,29 +105,29 @@ static inline void compareStringHashmap2(const std::string &string,
     }
 }
 
-//Credits to http://www.catalysoft.com/articles/StrikeAMatch.html
-static inline void compareString_letterPairs(const std::string& str, std::vector<std::string>& pairs) {
-
-    pairs.clear();
-    unsigned long numPairs = str.length()-1;
-    if (!numPairs) {
-        pairs.emplace_back(str);
-    }
-    if (numPairs < 0)
-        numPairs = 0;
-    for (unsigned long i = 0; i<numPairs; i++) {
-        pairs.emplace_back(str.substr(i, 2));
-    }
-}
-
-//Credits to http://www.catalysoft.com/articles/StrikeAMatch.html
-std::vector<std::string> compareString_wordLetterPairs(const std::string& strMixed) {
-    std::istringstream iss(strMixed);
-    std::vector<std::string> allPairs{};
-    for(std::string s; iss >> s; )
-        compareString_letterPairs(s, allPairs);
-    return allPairs;
-}
+////Credits to http://www.catalysoft.com/articles/StrikeAMatch.html
+//static inline void compareString_letterPairs(const std::string& str, std::vector<std::string>& pairs) {
+//
+//    pairs.clear();
+//    unsigned long numPairs = str.length()-1;
+//    if (!numPairs) {
+//        pairs.emplace_back(str);
+//    }
+//    if (numPairs < 0)
+//        numPairs = 0;
+//    for (unsigned long i = 0; i<numPairs; i++) {
+//        pairs.emplace_back(str.substr(i, 2));
+//    }
+//}
+//
+////Credits to http://www.catalysoft.com/articles/StrikeAMatch.html
+//std::vector<std::string> compareString_wordLetterPairs(const std::string& strMixed) {
+//    std::istringstream iss(strMixed);
+//    std::vector<std::string> allPairs{};
+//    for(std::string s; iss >> s; )
+//        compareString_letterPairs(s, allPairs);
+//    return allPairs;
+//}
 
 static inline void compareStringHashMap(const std::string& str, std::unordered_map<std::string, size_t> & retMap) {
     std::vector<size_t> retList{};
@@ -211,6 +211,8 @@ void SimplifiedFuzzyStringMatching::rankCollectionOf(std::unordered_set<size_t> 
     }
 }
 
+std::vector<std::string> compareString_wordLetterPairs(const std::string& strMixed);
+
 void SimplifiedFuzzyStringMatching::fuzzyMatch(double threshold, size_t topk, const std::string &objectString,
                                                std::multimap<double, std::string> &result) const {
     yaucl::structures::PollMap<double, std::string> toReturnTop{topk};
@@ -246,6 +248,8 @@ FuzzyMatchSerializer::addGramsToMap(const std::string &string,  const std::pair<
     for (const std::string& x : associatedOtherStrings)
         objectMultipleStirngs[id].emplace_back(x);
 
+    if (!consentToFullyFuzzyIndex)
+        return;
     std::unordered_map<std::string,size_t> cp;
     std::vector<size_t> vec;
 
@@ -270,6 +274,8 @@ void FuzzyMatchSerializer::fuzzyMatch(double threshold, size_t topk, const std::
     std::vector<std::string> objectGrams = compareString_wordLetterPairs(objectString);
     std::set<std::pair<size_t,size_t>> candidates{};
     std::unordered_map<std::string, size_t> m1;
+    if (!consentToFullyFuzzyIndex)
+        throw std::runtime_error("ERROR: cannot fuzzy match if you disabled the indexing (2)!");
 
     // obtain all the objects that are assoicated to the gram that are within the current objectString in objectStrings
     for (const std::string& gram : objectGrams) {

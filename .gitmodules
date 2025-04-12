@@ -25,3 +25,6 @@
 [submodule "submodules/cpp-lru-cache"]
 	path = submodules/cpp-lru-cache
 	url = https://github.com/lamerman/cpp-lru-cache
+[submodule "submodules/itertools"]
+	path = submodules/itertools
+	url = https://github.com/ryanhaining/cppitertools

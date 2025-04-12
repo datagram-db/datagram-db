@@ -27,11 +27,42 @@
 
 namespace gsm2 {
     namespace tables {
+        PhiTable::secmem_record::secmem_record(size_t label_id, size_t l0Id, const std::pair<size_t,size_t>& nodeId, double wContained, size_t idContained, size_t instanceId) : label_id(label_id), l0_id(l0Id), graph_id(nodeId.first),
+                                                                                                                                                  object_id(nodeId.second),
+                                                                                                                                                  w_contained(wContained),
+                                                                                                                                                  id_contained(idContained),
+                                                                                                                                                  instance_id{instanceId} {}
+
         PhiTable::record::record(size_t l0Id, const std::pair<size_t,size_t>& nodeId, double wContained, size_t idContained, size_t instanceId) : l0_id(l0Id), graph_id(nodeId.first),
         object_id(nodeId.second),
                                                                                                       w_contained(wContained),
                                                                                                       id_contained(idContained),
                                                                                                       instance_id{instanceId} {}
+        bool PhiTable::secmem_record::operator<(const PhiTable::secmem_record &rhs) const {
+            if (label_id < rhs.label_id)
+                return true;
+            if (l0_id < rhs.l0_id)
+                return true;
+            if (rhs.l0_id < l0_id)
+                return false;
+            if (graph_id < rhs.graph_id)
+                return true;
+            if (rhs.graph_id < graph_id)
+                return false;
+            if (object_id < rhs.object_id)
+                return true;
+            if (rhs.object_id < object_id)
+                return false;
+            if (w_contained < rhs.w_contained)
+                return true;
+            if (rhs.w_contained < w_contained)
+                return false;
+            if (id_contained < rhs.id_contained)
+                return true;
+            if (id_contained > rhs.id_contained)
+                return false;
+            return instance_id < rhs.instance_id;
+        }
 
         bool PhiTable::record::operator<(const PhiTable::record &rhs) const {
             if (l0_id < rhs.l0_id)
@@ -69,6 +100,18 @@ namespace gsm2 {
             return !(*this < rhs);
         }
 
+        bool PhiTable::secmem_record::operator>(const PhiTable::secmem_record &rhs) const {
+            return rhs < *this;
+        }
+
+        bool PhiTable::secmem_record::operator<=(const PhiTable::secmem_record &rhs) const {
+            return !(rhs < *this);
+        }
+
+        bool PhiTable::secmem_record::operator>=(const PhiTable::secmem_record &rhs) const {
+            return !(*this < rhs);
+        }
+
 //        PhiTable::primary_index::primary_index(size_t l0Id, const PhiTable::record *begin,
 //                                               const PhiTable::record *anEnd) : l0_id(l0Id), begin(begin), end(anEnd) {}
 
@@ -77,7 +120,7 @@ namespace gsm2 {
         }
 
         size_t PhiTable::index(size_t first_record_id) {
-            std::sort(table.begin(), table.end());
+            sort();
             size_t lIdPrev = 0;
             const struct record *begin;
             size_t N = table.size();

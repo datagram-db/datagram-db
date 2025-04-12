@@ -34,6 +34,8 @@
 #include "graph_grammar/simple_graph_grammarParser.h"
 #include "database/GSMPatternVisitor.h"
 
+#define PRINT_GROUP_MATCHING
+
 // https://stackoverflow.com/a/66969964/1376095
 template <typename T>
 std::optional<T> get_v_opt(const std::any & tmp)
@@ -1309,15 +1311,19 @@ public:
                     Interpret I(graph_id, pattern_id, pattern_result.first, it->second, table_offset, *this, pr.morphisms,
                                 forloading);
                     if (pattern.has_where) {
-//                        std::cout << "TGraph #" << graph_id << ": applying pattern " << pattern.pattern_name << " for node " << vertex << std::endl;
-
+                        if ((graph_id == 1) && (vertex == 18446744073709551615ULL))
+                            std::cout << "HERE" << std::endl;
+#ifdef PRINT_GROUP_MATCHING
+                        std::cout << "TGraph #" << graph_id << ": applying pattern " << pattern.pattern_name << " for node " << vertex << std::endl;
+#endif
                         if ((I.interpret(pattern.where, 1).empty())) {
                             table_offset++;
                             continue; //next entry
                         }
                     }
-//                    std::cout << "FGraph #" << graph_id << ": applying pattern " << pattern.pattern_name << " for node " << vertex << std::endl;
-
+#ifdef PRINT_GROUP_MATCHING
+                    std::cout << "FGraph #" << graph_id << ": applying pattern " << pattern.pattern_name << " for node " << vertex << std::endl;
+#endif
 
                     for (const auto& operation : pattern.rwr_to) {
                         switch (operation.t) {

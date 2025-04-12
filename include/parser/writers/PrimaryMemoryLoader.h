@@ -23,7 +23,14 @@ struct PrimaryMemoryLoader : public DataWriter {
     std::pair<size_t,size_t> graphId_eventId{0,0};
 
     std::map<size_t, gsm_object> queued_objects;
+
+    inline void deactivatePrimaryMemoryFutilities() {
+        doPrimaryMemoryIndex = false;
+        forloading.ells_and_xis_just_as_repositories();
+    }
+
 private:
+    bool doPrimaryMemoryIndex = true;
     inline void actual_writeObject(const gsm_object& object, const std::unordered_map<std::string, gsm2::tables::AttributeTableType>& map_for_types) {
 //        if (graphId_eventId.first > 0)
 //            std::cerr << "WARNING: this is something should not happen when loading Schema" << std::endl;
@@ -48,6 +55,12 @@ private:
                 forloading.containment_relationships.emplace(tmp);
             }
         }
+        while (forloading.objectScores.size() <= graphId_eventId.first)
+            forloading.objectScores.emplace_back();
+        auto& obj =  forloading.objectScores[graphId_eventId.first];
+        while (obj.size() <= graphId_eventId.second)
+            obj.emplace_back();
+        obj[graphId_eventId.second].emplace_back(1.0);
         forloading.objectScoresLoading[graphId_eventId].emplace_back(1.0);
         graphId_eventId.second++;
 
