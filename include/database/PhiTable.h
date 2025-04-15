@@ -110,14 +110,10 @@ namespace gsm2 {
             };
 
             struct secmem_record {
-                size_t label_id;
-                size_t l0_id;
-                size_t graph_id;
+                size_t src_label;
                 size_t object_id;   // src
-                double w_contained; // Weight
                 size_t id_contained;// dst
-                size_t instance_id;
-                size_t record_id;
+                double w_contained; // Weight
 
                 secmem_record(const secmem_record&) = default;
                 secmem_record(secmem_record&&) = default;
@@ -126,18 +122,15 @@ namespace gsm2 {
                 secmem_record(size_t label_id, size_t l0Id = 0, const std::pair<size_t,size_t>& nodeId = {0,0}, double wContained = 1.0, size_t idContained = 1, size_t instance_id = 0);
 
                 secmem_record& operator=(const record& x) {
-                    l0_id = x.l0_id;
-                    graph_id = x.graph_id;
+                    src_label = x.l0_id;
                     object_id = x.object_id;
                     w_contained = x.w_contained;
                     id_contained = x.id_contained;
-                    instance_id = x.instance_id;
-                    record_id = x.record_id;
                     return *this;
                 }
 
                 friend std::ostream& operator<<(std::ostream& os, const secmem_record& dt) {
-                    return os << "graph #" << dt.graph_id << ": (" << dt.object_id << ")-->(" << dt.id_contained << ")";
+                    return os << "graph #" << /*dt.graph_id <<*/ ": (" << dt.object_id << ")-->(" << dt.id_contained << ")";
                 }
                 bool operator<(const secmem_record &rhs) const;
                 bool operator>(const secmem_record &rhs) const;

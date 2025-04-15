@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(gsm2)
+set(BUILD_TESTING OFF)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_FLAGS "-fconstexpr-depth=5023 -m64")
 cmake_policy(SET CMP0067 NEW)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/submodules/lemon-1.3.1)
+include_directories(submodules/lemon-1.3.1)
+add_subdirectory(submodules/lemon-1.3.1)
 add_subdirectory(submodules/capnproto)
 include_directories(submodules/capnproto/c++/src/)
 set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
@@ -40,7 +44,7 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
     set(CMAKE_CXX_FLAGS_DEBUG "-g")
 else()
     message(WARNING "Compiling in optimized mode. Level=2")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 include_directories(submodules/args)
@@ -56,7 +60,6 @@ add_subdirectory(submodules/yaucl/submodules/antlr4/runtime/Cpp)
 include_directories(submodules/yaucl/submodules/antlr4/runtime/Cpp/runtime/src)
 include_directories(submodules/yaucl/antlr4/cpp/antlr4)
 include_directories(submodules/tabulate/include)
-
 include_directories(submodules/yaucl/submodules/rocksdb/include)
 add_subdirectory(submodules/yaucl/submodules/rocksdb)
 
@@ -194,17 +197,17 @@ add_library(gsm2 OBJECT antlr4/graph_grammar/simple_graph_grammarLexer.cpp antlr
         src/parser/ra_readers/RandomAccessBulkreader.cpp
         include/parser/ra_readers/RandomAccessGSMReader.h
         src/parser/ra_readers/RandomAccessGSMReader.cpp
+        src/ndp/MainMemoryIndicesForSecondary.cpp
 )
 target_link_libraries(gsm2 yaucl_data antlr4_static gsm_load gsm_script yaucl_structures roaring  yaucl_hashing yaucl_graph )
 
 add_executable(gsm2_server main.cpp src/queries/NestedResultTable.cpp include/queries/NestedResultTable.h)
-target_link_libraries(gsm2_server antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)# antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2 gsm_script)
+target_link_libraries(gsm2_server antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)#  antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2 gsm_script)
 
 include_directories(submodules/yaucl/submodules/rocksdb/include)
 include_directories(submodules/cpp-lru-cache/include)
 
 add_executable(data_loader_test data.cpp
-        include/parser/RandomAccessReader.h
 )
 #sudo apt-get install libsnappy-dev libgflags-dev
 #target_link_libraries(data_loader_test snappy bz2  z rt ${ROCKSDB_STATIC_LIB} yaucl_ndp)
@@ -212,7 +215,7 @@ add_executable(data_loader_test data.cpp
 
 # add STXXL includes path
 #include_directories(${STXXL_INCLUDE_DIRS})
-target_link_libraries(data_loader_test yaucl_data antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)
+target_link_libraries(data_loader_test lemon yaucl_data antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)#
 
 #enable_testing ()
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)

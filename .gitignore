@@ -82,3 +82,8 @@ scalability.csv
 scalability_dist.csv
 simple.csv
 my.log
+/cmake-build-debug/
+/cmake-build-debug-coverage/
+/cmake-build-release/
+/secondary_tests/
+/submodules/lemon-1.3.1/doc/
