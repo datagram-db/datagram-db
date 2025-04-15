@@ -1,4 +1,4 @@
-viz/data/*
+gitviz/data/*
 viz/cypher_running_times.txt
 cmake-build-debug/*
 *.dot
