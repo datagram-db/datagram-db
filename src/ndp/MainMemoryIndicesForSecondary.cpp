@@ -4,6 +4,15 @@
 
 #include <ndp/MainMemoryIndicesForSecondary.h>
 
+void QuickGraph::build() {
+    if (!isBuilt) {
+        std::sort(arcs.begin(), arcs.end());
+        gr.build(n, arcs.begin(), arcs.end());
+        arcs.clear();
+        isBuilt = true;
+    }
+}
+
 void init_attributes(MainMemoryIndicesForSecondary& data, const std::filesystem::path& path) {
     std::ifstream file(path);
     std::string line;
@@ -175,7 +184,7 @@ void init_ellxi(MainMemoryIndicesForSecondary& data, const std::filesystem::path
 }
 
 
-MainMemoryIndicesForSecondary::MainMemoryIndicesForSecondary(const std::filesystem::path &path): containment_offsets(path / "database_containment_table_si.binary"),
+MainMemoryIndicesForSecondary::MainMemoryIndicesForSecondary(const std::filesystem::path &path): containment_offsets(path / "database_containment_table_si.binary"), inv_containment_offsets(path / "database_containment_table_si_inv.binary"),
                                                                   ells(path / "fuzzyStringMatching"/"object_labels_ells"),
                                                                   xis(path / "fuzzyStringMatching"/"object_values_xis"),
                                                                   attributes_offsets(path / "database_attributes_table_si.binary"),

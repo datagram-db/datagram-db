@@ -80,5 +80,26 @@ struct gsm_object  {
     bool operator!=(const gsm_object &rhs) const;
 };
 
+struct lightweight_gsm_object  {
+    std::vector<std::string>                              ell;
+    std::vector<std::string>                              xi;
+    std::unordered_map<std::string, std::vector<size_t>>  phi;
+    std::unordered_map<std::string, union_minimal>        pi;
+
+    inline void clear() {
+        phi.clear();
+        pi.clear();
+        ell.clear();
+        xi.clear();
+    }
+
+    lightweight_gsm_object() {}
+    lightweight_gsm_object(const lightweight_gsm_object&) = default;
+    lightweight_gsm_object(lightweight_gsm_object&&) = default;
+    lightweight_gsm_object& operator=(const lightweight_gsm_object&) = default;
+    lightweight_gsm_object& operator=(lightweight_gsm_object&&) = default;
+    bool operator==(const lightweight_gsm_object &rhs) const;
+    bool operator!=(const lightweight_gsm_object &rhs) const;
+};
 
 #endif //GSM_GSQL_GSM_OBJECT_H
