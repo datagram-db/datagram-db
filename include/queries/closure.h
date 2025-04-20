@@ -865,7 +865,7 @@ public:
                   const gsm2::tables::LinearGSM* ptr2) : graph_id(graphId), pattern_id(patternId), schema(schema),
                                                           table(table), record_id(recordId), clos(clos), ptr{ptr}, ptr2{ptr2} {}
 
-        NestedResultTable interpret_closure_evaluate(rewrite_expr* ptr, bool force, bool node_or_edge_otherwise) /*const*/;
+        NestedResultTable interpret_closure_evaluate(rewrite_expr* ptr, bool force, bool node_or_edge_otherwise, NestedResultTable::variant_type_cpp expected = NestedResultTable::variant_type_cpp::RT_STRING) /*const*/;
 //        std::vector<size_t> interpret_closure_evaluate2(rewrite_expr* ptr) /*const*/;
 
         OrderedSet interpret(test_pred& ptr, size_t maxN) /*const*/;

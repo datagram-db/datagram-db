@@ -442,7 +442,7 @@ void closure::interpret_closure_set(rewrite_expr *ptr,
             const auto& record = table.datum.at(record_id);
             NestedResultTable VAR = resolveIdsOverVariableName2(graph_id, pattern_id, ptr->ptr_or_else->prop, record, true);
             NestedResultTable VAL = I.interpret_closure_evaluate(target_ptr, true, true);
-            NestedResultTable NAME = I.interpret_closure_evaluate(ptr->pi_key_arg_or_then.get(), false, true);
+            NestedResultTable NAME = I.interpret_closure_evaluate(ptr->pi_key_arg_or_then.get(), false, true, NestedResultTable::variant_type_cpp::RT_STRING);
             std::function<void(size_t, size_t, const std::string&, const std::string&)> resolve = [this](size_t graph_id, size_t var, const std::string& x, const std::string& val) {
                 delta_updates_per_graph[graph_id].delta_plus_db.generateId(var).content[x] = val;
             };
@@ -474,7 +474,7 @@ void closure::interpret_closure_set(rewrite_expr *ptr,
             const auto& record = table.datum.at(record_id);
             NestedResultTable VAR = resolveIdsOverVariableName2(graph_id, pattern_id, ptr->ptr_or_else->prop, record, true);
             NestedResultTable VAL = I.interpret_closure_evaluate(target_ptr, true, true);
-            NestedResultTable NAME = I.interpret_closure_evaluate(ptr->pi_key_arg_or_then.get(), false, true);
+            NestedResultTable NAME = I.interpret_closure_evaluate(ptr->pi_key_arg_or_then.get(), false, true, NestedResultTable::variant_type_cpp::RT_STRING);
 
             std::function<void(size_t, size_t, const std::string&, const std::vector<gsm_object_xi_content>&)> resolve = [this,&I,&ptr](size_t graph_id, size_t var, const std::string& x, const std::vector<gsm_object_xi_content>& val) {
                 if (x.contains("is is"))
@@ -548,7 +548,7 @@ void closure::new_data_slate() {
 #include <scriptv2/ScriptVisitor.h>
 #include <scriptv2/ScriptAST.h>
 
-NestedResultTable closure::Interpret::interpret_closure_evaluate(rewrite_expr *ptr, bool force, bool node_or_edge_otherwise) /*const*/ {
+NestedResultTable closure::Interpret::interpret_closure_evaluate(rewrite_expr *ptr, bool force, bool node_or_edge_otherwise, NestedResultTable::variant_type_cpp expected) /*const*/ {
     if (!ptr)
         return {};
     switch (ptr->t) {
@@ -665,12 +665,21 @@ NestedResultTable closure::Interpret::interpret_closure_evaluate(rewrite_expr *p
                 // TODO: estimate the type of R just from the expression, so to save computational time.
                 //       by doing this, we can then compute r after updating toConsider with result, and only compute the results for the specific positions
                 auto r = interpret_closure_evaluate(ptr->ptr_or_else.get(), force, node_or_edge_otherwise);
-                NestedResultTable::variant_type_cpp casting;
+                NestedResultTable::variant_type_cpp casting = NestedResultTable::variant_type_cpp::RT_NONE;
                 if (l.t != NestedResultTable::variant_type::R_SCRIPT) {
                     casting = getExpectedType(l.t);
                 } else if (r.t != NestedResultTable::variant_type::R_SCRIPT) {
                     casting = getExpectedType(r.t);
+                } else {
+                    casting = expected;
                 }
+//                // PATCH
+//                if ((casting == NestedResultTable::variant_type_cpp::RT_SCRIPT) || (casting == NestedResultTable::variant_type_cpp::RT_NONE))
+//                    std::cout << "ERROR HERE!";
+//                if (std::holds_alternative<std::string>(l.content)) {
+//                    casting = NestedResultTable::variant_type_cpp::RT_STRING;
+//                }
+
                 l = resolve(l,toConsider,casting);
 //                std::cout << "R" << result << std::endl;
 //                std::cout << toConsider << std::endl;
@@ -691,6 +700,19 @@ NestedResultTable closure::Interpret::interpret_closure_evaluate(rewrite_expr *p
                         return {std::move(v), -1, -1};
                     }
                         break;
+
+                    case NestedResultTable::RT_STRING: {
+                        std::vector<std::string> v;
+                        for (size_t j = 0; j< variableResolution.size(); j++) {
+                            size_t i = variableResolution.getInt(j);
+                            if ((result.contains(i)))
+                                v.emplace_back(l.getString(j));
+                            else if (r.hasTInVector<std::string>(j))
+                                v.emplace_back(r.getString(j));
+                        }
+                        return {std::move(v), -1, -1};
+                    }
+
                     case NestedResultTable::RT_VSIZET: {
                         std::vector<size_t> v;
                         for (size_t j = 0; j< variableResolution.size(); j++) {
@@ -703,6 +725,20 @@ NestedResultTable closure::Interpret::interpret_closure_evaluate(rewrite_expr *p
                         return {std::move(v), true, -1, -1};
                     }
                         break;
+
+                    case NestedResultTable::RT_SIZET: {
+                        std::vector<size_t> v;
+                        for (size_t j = 0; j< variableResolution.size(); j++) {
+                            size_t i = variableResolution.getInt(j);
+                            if ((result.contains(i)) && (l.containsInt(j)))
+                                v.emplace_back(l.getInt(j));
+                            else if (r.hasTInVector<size_t>(j))
+                                v.emplace_back(r.getInt(j));
+                        }
+                        return {std::move(v), true, -1, -1};
+                    }
+                        break;
+
                     case NestedResultTable::RT_VCONTENT:{
                         std::vector<std::vector<gsm_object_xi_content>> v;
                         for (size_t j = 0; j< variableResolution.size(); j++) {
@@ -715,8 +751,7 @@ NestedResultTable closure::Interpret::interpret_closure_evaluate(rewrite_expr *p
                         return {std::move(v), -1, -1};
                     }
                         break;
-                    case NestedResultTable::RT_STRING:
-                    case NestedResultTable::RT_SIZET:
+
                     case NestedResultTable::RT_CONTENT:
                     case NestedResultTable::RT_SCRIPT:
                     case NestedResultTable::RT_NONE:
@@ -1587,8 +1622,7 @@ closure::Interpret::resolve(const NestedResultTable &x,
                         throw std::runtime_error("ERROR: expected a vector!");
                 }
 
-                case NestedResultTable::RT_NONE:
-                case NestedResultTable::RT_SCRIPT:
+                default:
                     throw std::runtime_error("ERROR: you need to provide a non-script other argument, so that the script can be correctly casted!");
             }
         }

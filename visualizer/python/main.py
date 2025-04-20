@@ -275,6 +275,10 @@ async def lists():
 
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        path = sys.argv[1]
+        if os.path.exists(path):
+            os.chdir(path)
     print(sorted([y for x in os.walk("./data") for y in x[1]], key=lambda x:int(x)))
     uvicorn.run("main:app", port=9999, workers=1,
                 reload=True,
