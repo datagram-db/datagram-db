@@ -28,3 +28,6 @@
 [submodule "submodules/itertools"]
 	path = submodules/itertools
 	url = https://github.com/ryanhaining/cppitertools
+[submodule "submodules/tqdm"]
+	path = submodules/tqdm
+	url = https://github.com/tqdm/tqdm.cpp

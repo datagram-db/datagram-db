@@ -296,7 +296,7 @@ namespace gsm2 {
 } // tables
 
 
-#include "magic_enum.hpp"
+#include <magic_enum/magic_enum.hpp>
 
 static inline void parse_schema_map(std::istream& stream,
                                     std::unordered_map<std::string, gsm2::tables::AttributeTableType>& result) {

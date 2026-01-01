@@ -615,7 +615,8 @@ static inline size_t initLoading(gsm2::tables::LinearGSM &db) {
 
 
 #include <fstream>
-#include "magic_enum.hpp"
+
+#include <magic_enum/magic_enum.hpp>
 
 static inline
 void convertMap(const NodeLabelBijectionGraph<size_t, std::string>& map,
