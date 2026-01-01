@@ -362,7 +362,7 @@ bool SchemaReader::load_csv(const Entity& e, bool isFirstPass) {
         for (uint64_t i = 0, N = parser2.nCells(); i<N; i++) {
             auto offset = header_mapping.empty() ? idx : header_mapping[idx];
             auto field_sv = parser2.getCell(i).first;
-            if ((!field_sv.data() && (field_sv.length()>0)) && (offset != -1)) {
+            if ((offset != -1) && (field_sv.data() && (field_sv.length()>0))) {
                 std::string field{field_sv};
                 auto it = e.find(e.fields_order[offset]);
                 if (it.has_value()) {
@@ -473,28 +473,38 @@ bool SchemaReader::load_xml(const Entity& e, bool isFirstPass) {
     return ctxt->wellFormed;
 }
 
-#include "rapidjson/filereadstream.h"
-#include "rapidjson/reader.h"
+// #include "rapidjson/filereadstream.h"
+// #include "rapidjson/reader.h"
 
 bool SchemaReader::load_json(const Entity& e, bool isFirstPass, const std::string& json) {
-
+    simdjson::dom::parser parser;
     state_stack.emplace_back(&e);
-    rapidjson::Reader reader;
+    // rapidjson::Reader reader;
     if (!json.empty()) {
+        auto result = parser.parse(json.c_str(), json.length());
 //    std::cerr << "Loading JSON DATA with pass " << isFirstPass << std::endl;
-        rapidjson::StringStream ss{json.c_str()};
+        // rapidjson::StringStream ss{json.c_str()};
         _isFirstPass = isFirstPass;
-        if (!reader.Parse(ss, *this))
+        if (!result.has_value())
             return false;
+        if (!print_json(result.value()))
+            return false;
+        // if (!reader.Parse(ss, *this))
+            // return false;
     } else {
-    std::cerr << "Loading JSON " << e.loading_filename << " of '" << e.name << "' with pass " << isFirstPass << std::endl;
-        FILE *ff = fopen(e.loading_filename.c_str(), "r");
-        char buffer[4096];
-        rapidjson::FileReadStream ss{ff, buffer, sizeof(buffer)};
-        _isFirstPass = isFirstPass;
-        if (!reader.Parse(ss, *this))
+        std::cerr << "Loading JSON " << e.loading_filename << " of '" << e.name << "' with pass " << isFirstPass << std::endl;
+        auto result = parser.load(e.loading_filename);
+        if (!result.has_value())
             return false;
-        fclose(ff);
+        // FILE *ff = fopen(e.loading_filename.c_str(), "r");
+        // char buffer[4096];
+        // rapidjson::FileReadStream ss{ff, buffer, sizeof(buffer)};
+        _isFirstPass = isFirstPass;
+        if (!print_json(result.value()))
+            return false;
+        // if (!reader.Parse(ss, *this))
+            // return false;
+        // fclose(ff);
     }
     state_stack.clear();
     return true;

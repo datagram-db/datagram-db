@@ -526,7 +526,8 @@ void Q6(const std::filesystem::path& path) {
 
 int main(void) {
     DataFormatHandler dfh;
-    minimal_writing(dfh);
+    // minimal_writing(dfh);
+    final_writing(dfh);
     // bool serialize = false;
     // if (serialize) {
     //     DataFormatHandler dfh;

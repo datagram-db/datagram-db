@@ -11,6 +11,8 @@ include_directories(submodules/lemon-1.3.1)
 include_directories(submodules/yaucl/submodules/magic_enum/include)
 add_subdirectory(submodules/lemon-1.3.1)
 add_subdirectory(submodules/capnproto)
+add_subdirectory(submodules/simdjson)
+include_directories(submodules/simdjson/include)
 include_directories(submodules/capnproto/c++/src/)
 set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
 #set(USE_COROUTINES ON CACHE BOOL "" FORCE)
@@ -229,7 +231,7 @@ add_executable(data_loader_test data.cpp
 
 # add STXXL includes path
 #include_directories(${STXXL_INCLUDE_DIRS})
-target_link_libraries(data_loader_test  lemon yaucl_data antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)#
+target_link_libraries(data_loader_test zsv simdjson lemon yaucl_data antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)#
 
 add_executable(zsv_wrapper zsv_wrapper.cpp
         submodules/yaucl/src/yaucl/data/csv/zsv_cpp.c)

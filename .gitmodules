@@ -34,3 +34,6 @@
 [submodule "submodules/zsv"]
 	path = submodules/zsv
 	url = https://github.com/liquidaty/zsv
+[submodule "submodules/simdjson"]
+	path = submodules/simdjson
+	url = https://github.com/simdjson/simdjson

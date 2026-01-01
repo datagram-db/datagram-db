@@ -14,6 +14,9 @@
 
 #include <parser/parser.h>
 
+// #include "simdjson/concepts.h"
+
+#include "simdjson.h"
 
 struct SchemaReader : public schemaBaseVisitor, public DataReader {
 
@@ -94,24 +97,96 @@ struct SchemaReader : public schemaBaseVisitor, public DataReader {
     // JSON Parser
     bool load_ljson(const Entity& e, bool isFirstPass) {
         std::cerr << "Loading LJSON " << e.loading_filename << " with pass " << isFirstPass << std::endl;
-        std::string line;
-        std::ifstream infile{e.loading_filename};
-        while (std::getline(infile, line))
-        {
-            if (!load_json(e, isFirstPass, line))
+        simdjson::dom::parser parser;
+        auto result = parser.load_many(e.loading_filename);
+        if (!result.has_value())
+            return false;
+        for (simdjson::dom::element doc : result.value()) {
+            // simdjson::dom::parser parser;
+            state_stack.emplace_back(&e);
+            // rapidjson::Reader reader;
+            if (!print_json(doc))
                 return false;
+            state_stack.clear();
+            return true;
         }
         return true;
+        // std::string line;
+        // std::ifstream infile{e.loading_filename};
+        // while (std::getline(infile, line))
+        // {
+            // if (!load_json(e, isFirstPass, line))
+                // return false;
+        // }
+        // return true;
     }
     bool load_json(const Entity& e, bool isFirstPass, const std::string& json = "");
 
+
+    bool print_json(simdjson::dom::element element) {
+        switch (element.type()) {
+            case simdjson::dom::element_type::ARRAY: {
+                if (!StartArray())
+                    return false;
+                for (simdjson::dom::element child : simdjson::dom::array(element)) {
+                    if (!print_json(child))
+                        return false;
+                }
+                if (!EndArray(0))
+                    return false;
+                return true;
+            }
+                break;
+            case simdjson::dom::element_type::OBJECT: {
+                if (!StartObject())
+                    return false;
+                for (simdjson::dom::key_value_pair field : simdjson::dom::object(element)) {
+                    if (!Key(field.key.data(), field.key.length(), false))
+                        return false;
+                    // cout << "\"" << field.key << "\": ";
+                    if (!print_json(field.value))
+                        return false;
+                }
+                // cout << "}";
+                if (!EndObject(0))
+                    return false;
+                return true;
+                break;
+            }
+
+            case simdjson::dom::element_type::INT64:
+                return Int64(int64_t(element));
+
+            case simdjson::dom::element_type::UINT64:
+                return Uint64(uint64_t(element));
+
+            case simdjson::dom::element_type::DOUBLE:
+                return Double(double(element));
+
+            case simdjson::dom::element_type::STRING: {
+                auto str = std::string_view(element);
+                return String(str.data(), str.length(), false);
+            }
+            case simdjson::dom::element_type::BOOL:
+                return Bool(bool(element));
+
+            case simdjson::dom::element_type::NULL_VALUE:
+                return Null();
+                // break;
+            default:
+                return false;
+        }
+    }
     bool Null();
     bool Bool(bool b);
+    bool Double(double d) ;
+
+
     bool Int(int d);
     bool Uint(unsigned d);
+
     bool Int64(int64_t d) ;
     bool Uint64(uint64_t d) ;
-    bool Double(double d) ;
     bool RawNumber(const char* str, rapidjson::SizeType length, bool copy) ;
     bool String(const char* str, rapidjson::SizeType length, bool copy) ;
     bool StartObject() ;
