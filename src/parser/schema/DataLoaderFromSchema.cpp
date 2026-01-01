@@ -292,14 +292,15 @@ std::any SchemaReader::visitEntity_declaration(schemaParser::Entity_declarationC
 
 bool SchemaReader::load_csv(const Entity& e, bool isFirstPass) {
     std::cerr << "Loading CSV " << e.loading_filename << " of '" << e.name << "' with pass " << isFirstPass << std::endl;
+    SIMDParser parser2(e.loading_filename, e.sep[0]);
     // TODO: loader
 //    gsm_object object;
 //        std::vector<std::pair<std::string,union_minimal>> dr;
 //        std::vector<std::pair<std::string,size_t>> cc;
 //        std::vector<double> score;
-    std::ifstream input_file(e.loading_filename);
-    aria::csv::CsvParser parser = aria::csv::CsvParser(input_file);
-    parser.delimiter(e.sep[0]);
+    // std::ifstream input_file(e.loading_filename);
+    // aria::csv::CsvParser parser = aria::csv::CsvParser(input_file);
+    // parser.delimiter(e.sep[0]);
 
     bool first_row = e.has_csv_header;
     table data;
@@ -309,14 +310,22 @@ bool SchemaReader::load_csv(const Entity& e, bool isFirstPass) {
     std::unordered_map<std::string, size_t> S;
     std::vector<ssize_t> header_mapping;
 
-    for (auto &row : parser) {
+    while (/*auto &row : parser*/ parser2.getNextRow()) {
         if (first_row) {
             first_row = false;
             size_t offset = 0;
-            for (auto &field : row) {
+
+            for (uint64_t i = 0, N = parser2.nCells(); i<N; i++) {
+                auto field = parser2.getCell(i).first;
+                // headers.push_back(std::string(field));
                 S.emplace(field, offset);
                 offset++;
             }
+
+            // for (auto &field : row) {
+            //     S.emplace(field, offset);
+            //     offset++;
+            // }
             header_mapping.resize(offset, -1);
 
             for (auto& declared_field_name: e.fields_order) {
@@ -350,9 +359,11 @@ bool SchemaReader::load_csv(const Entity& e, bool isFirstPass) {
         current.id = globalObjectId;
         current.ell.emplace_back(e.name);
         current.ell.emplace_back(e.namespace_);
-        for (auto &field : row) {
+        for (uint64_t i = 0, N = parser2.nCells(); i<N; i++) {
             auto offset = header_mapping.empty() ? idx : header_mapping[idx];
-            if ((!field.empty()) && (offset != -1)) {
+            auto field_sv = parser2.getCell(i).first;
+            if ((!field_sv.data() && (field_sv.length()>0)) && (offset != -1)) {
+                std::string field{field_sv};
                 auto it = e.find(e.fields_order[offset]);
                 if (it.has_value()) {
                     auto val = it.value();

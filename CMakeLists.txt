@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(gsm2)
 set(BUILD_TESTING OFF)
+set(SIMDCSV_SANITIZE ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_FLAGS "-fconstexpr-depth=5023 -m64")
 cmake_policy(SET CMP0067 NEW)
@@ -64,6 +65,16 @@ include_directories(submodules/yaucl/antlr4/cpp/antlr4)
 include_directories(submodules/tabulate/include)
 include_directories(submodules/yaucl/submodules/rocksdb/include)
 add_subdirectory(submodules/yaucl/submodules/rocksdb)
+
+#include_directories(submodules/sonicsv)
+#add_library(sonicsv submodules/sonicsv.cpp)
+#include_directories(submodules/zsv_includes)
+#add_library(zsvlib submodules/zsv/src/vector_delim.c
+#        submodules/zsv/src/zsv.c
+#        submodules/zsv/src/zsv_internal.c
+#        submodules/zsv/src/zsv_scan_delim.c
+#        submodules/zsv/src/zsv_scan_fixed.c
+#        submodules/zsv/src/zsv_strencode.c)
 
 #<<<<<<< HEAD
 add_library(yaucl_hashing OBJECT
@@ -210,6 +221,7 @@ include_directories(submodules/yaucl/submodules/rocksdb/include)
 include_directories(submodules/cpp-lru-cache/include)
 
 add_executable(data_loader_test data.cpp
+        submodules/yaucl/src/yaucl/data/csv/zsv_cpp.c
 )
 #sudo apt-get install libsnappy-dev libgflags-dev
 #target_link_libraries(data_loader_test snappy bz2  z rt ${ROCKSDB_STATIC_LIB} yaucl_ndp)
@@ -217,7 +229,11 @@ add_executable(data_loader_test data.cpp
 
 # add STXXL includes path
 #include_directories(${STXXL_INCLUDE_DIRS})
-target_link_libraries(data_loader_test lemon yaucl_data antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)#
+target_link_libraries(data_loader_test  lemon yaucl_data antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph  gsm2  gsm_script antlr4_static yaucl_structures roaring  yaucl_hashing yaucl_graph yaucl_data ${LIBXML2_LIBRARIES} snappy bz2  z rt rocksdb yaucl_ndp gsm_load CapnProto::kj CapnProto::capnp)#
+
+add_executable(zsv_wrapper zsv_wrapper.cpp
+        submodules/yaucl/src/yaucl/data/csv/zsv_cpp.c)
+target_link_libraries(zsv_wrapper zsv)
 
 #enable_testing ()
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)

@@ -31,3 +31,6 @@
 [submodule "submodules/tqdm"]
 	path = submodules/tqdm
 	url = https://github.com/tqdm/tqdm.cpp
+[submodule "submodules/zsv"]
+	path = submodules/zsv
+	url = https://github.com/liquidaty/zsv

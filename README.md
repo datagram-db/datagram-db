@@ -10,7 +10,8 @@ Please read the Wiki for better documentation: https://github.com/datagram-db/gs
 ## Dependencies
 
  * gcc and g++ version 14.2.0 (libstdc++6 14.2.0)
- * clang-19 and clang++-19
+ * clang-20 and clang++-20
+ * zsv (submodules/zsv) for CSV parsing. See build.md!
 
 ## Authors
 
