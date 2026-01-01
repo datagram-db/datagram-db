@@ -17,7 +17,7 @@ Please read the Wiki for better documentation: https://github.com/datagram-db/gs
 
 * Giacomo Bergami (2023 - )
 * Wiktor Zegadło (2023)
-* Oliver R. Fox (2024)
+* Oliver R. Fox (2024 - 2025)
 
 
 ## MetaModel
