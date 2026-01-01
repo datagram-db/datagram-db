@@ -12,16 +12,16 @@ void final_writing(DataFormatHandler& dfh) {
     std::clock_t start;
     double duration;
     start = std::clock();
-    dfh.load_to_secondary_memory("/home/giacomo/Scaricati/Unibench-0.2/Dataset/Schema.txt",
-                                 "/home/giacomo/projects/gsm2/secondary_tests/final",
+    dfh.load_to_secondary_memory("/home/gyankos/Scaricati/osfstorage-archive/Data/Dataset/Schema.txt",
+                                 "/home/gyankos/Scaricati/osfstorage-archive/binaries/benchmark",
                                  DataFormat::Schema);
     duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
     std::cout<<"loaded and indexed in (s): "<< duration <<'\n';
 }
 
 void minimal_writing(DataFormatHandler& dfh) {
-    dfh.load_to_secondary_memory("/home/giacomo/projects/DATA_IDEAS2021/Schema.txt",
-                                 "/home/giacomo/projects/gsm2/secondary_tests/minimal",
+    dfh.load_to_secondary_memory("/home/gyankos/Scaricati/osfstorage-archive/Schema.txt",
+                                 "/home/gyankos/Scaricati/osfstorage-archive/binaries/minimal",
                                  DataFormat::Schema);
 }
 
@@ -525,15 +525,17 @@ void Q6(const std::filesystem::path& path) {
 }
 
 int main(void) {
-    bool serialize = false;
-    if (serialize) {
-        DataFormatHandler dfh;
-        final_writing(dfh);
-    }
+    DataFormatHandler dfh;
+    minimal_writing(dfh);
+    // bool serialize = false;
+    // if (serialize) {
+    //     DataFormatHandler dfh;
+    //     final_writing(dfh);
+    // }
 //    Q1("/home/giacomo/projects/gsm2/secondary_tests/final");
 //    Q2("/home/giacomo/projects/gsm2/secondary_tests/final");
 //    Q4("/home/giacomo/projects/gsm2/secondary_tests/final");
-    Q6("/home/giacomo/projects/gsm2/secondary_tests/final");
+    // Q6("/home/giacomo/projects/gsm2/secondary_tests/final");
 //    Q5("/home/giacomo/projects/gsm2/secondary_tests/final");
 //    Q3("/home/giacomo/projects/gsm2/secondary_tests/final");
 

@@ -1,6 +1,7 @@
 viz/data/*
 viz/cypher_running_times.txt
-cmake-build-debug/*
+cmake-build-debug*/*
+cmake-build-release*/*
 *.dot
 *.pdf
 dist/*
