@@ -3,7 +3,7 @@
 # <img src="doc/export-2024-08-26 121525.svg" style="height:80px; width: auto;" /> DatagramDB
 
 This repository provides a preliminary implementation of the Generalised Semistructured Model and of its associated language,
-Generalised Semistructured Query Language, as well.
+Generalised Semistructured Query Language, as well. This legacy version is only intended for working with LaSSI.
 
 Please read the Wiki for better documentation: https://github.com/datagram-db/gsm_gsql/wiki
 
